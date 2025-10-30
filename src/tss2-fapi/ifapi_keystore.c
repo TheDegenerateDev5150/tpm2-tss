@@ -1438,7 +1438,9 @@ copy_uint8_ary(UINT8_ARY *dest, const UINT8_ARY * src) {
     dest->size = src->size;
     dest->buffer = malloc(dest->size);
     goto_if_null(dest->buffer, "Out of memory.", r, error_cleanup);
-    memcpy(dest->buffer, src->buffer, dest->size);
+    if (src->size > 0) {
+        memcpy(dest->buffer, src->buffer, dest->size);
+    }
 
     return r;
 
@@ -1552,6 +1554,7 @@ ifapi_cleanup_ifapi_key(IFAPI_KEY * key) {
         SAFE_FREE(key->description);
         SAFE_FREE(key->certificate);
         SAFE_FREE(key->appData.buffer);
+        key->unique_init_set = TPM2_NO;
     }
 }
 
@@ -1667,6 +1670,9 @@ ifapi_copy_ifapi_key_object(IFAPI_OBJECT * dest, const IFAPI_OBJECT * src) {
     dest->system = src->system;
     dest->public.handle = src->public.handle;
     dest->authorization_state = src->authorization_state;
+    if (src->misc.key.unique_init_set) {
+        dest->misc.key.unique_init = src->misc.key.unique_init;
+    }
 
     return r;
 

@@ -786,14 +786,14 @@ Fapi_Provision_Finish(FAPI_CONTEXT *context)
             command->cert_count = (*capabilityData)->data.handles.count;
 
             /* Filter out NV handles beyond the EK cert range */
-            for (size_t i = 0; i < command->cert_count; i++) {
+            for (size_t j = 0; j < command->cert_count; j++) {
                 /* Check whether a cert chain exists. */
-                if (command->capabilityData->data.handles.handle[i] >= EK_CERT_CHAIN_MIN &&
-                    command->capabilityData->data.handles.handle[i] <= EK_CERT_CHAIN_MAX) {
+                if (command->capabilityData->data.handles.handle[j] >= EK_CERT_CHAIN_MIN &&
+                    command->capabilityData->data.handles.handle[j] <= EK_CERT_CHAIN_MAX) {
                     command->cert_chain_exists = true;
                 }
-                if (command->capabilityData->data.handles.handle[i] > EK_CERT_RANGE) {
-                    command->cert_count = i;
+                if (command->capabilityData->data.handles.handle[j] > EK_CERT_RANGE) {
+                    command->cert_count = j;
                 }
             }
 
@@ -1568,6 +1568,13 @@ Fapi_Provision_Finish(FAPI_CONTEXT *context)
             try_again_or_error_goto(r, "Cleanup", error_cleanup);
 
             context->state =FAPI_STATE_INIT;
+            memset(&context->create_nv, 0, sizeof(IFAPI_CREATE_NV));
+            fallthrough;
+
+        statecase(context->state, PROVISION_CHECK_EXISTING_NV);
+            r = ifapi_create_nv_objects(context, &context->create_nv);
+            return_try_again(r);
+            goto_if_error_reset_state(r, "Read EK template", error_cleanup);
             break;
 
         statecase(context->state, PROVISION_WRITE_HIERARCHIES);
@@ -1674,7 +1681,7 @@ error_cleanup:
     ifapi_cleanup_ifapi_object(hierarchy_he);
     ifapi_cleanup_ifapi_object(hierarchy_hn);
     ifapi_cleanup_ifapi_object(hierarchy_lockout);
-    for (size_t i = 0; i < command->numPaths; i++) {
+    for (i = 0; i < command->numPaths; i++) {
         SAFE_FREE(command->pathlist[i]);
     }
     SAFE_FREE(command->pathlist);
@@ -1697,7 +1704,7 @@ error_cleanup:
         SAFE_FREE(command->hierarchies);
     }
     if (command->pathlist) {
-        for (size_t i = 0; i < command->numPaths; i++) {
+        for (i = 0; i < command->numPaths; i++) {
             SAFE_FREE(command->pathlist[i]);
         }
         SAFE_FREE(command->pathlist);
